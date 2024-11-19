@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: postgres-db
+spec: {}
+status: {}
+
+---
+apiVersion: v1
+data:
+  POSTGRES_DB: ENC[AES256_GCM,data:DcCHyAJIwsw=,iv:S1U5aYjT66lIU5lFqeaRym8dCvEz9R3o/Ud2S0bVIio=,tag:4Ix1FyKo1JlZCkZUjjgi3g==,type:str]
+  POSTGRES_PASSWORD: ENC[AES256_GCM,data:TSQtAC+IsB4=,iv:G2uPKDlVl6qKmNjnomIf3NFgIAoo1QKFiocWDXMzv2g=,tag:jLIkcCCJgZCKZKD8/jnvkA==,type:str]
+  POSTGRES_USER: ENC[AES256_GCM,data:FLYAsA9yMF/vvU3X,iv:+42z625tAnITmHFvsaCDqJ4DgeICoPZ2rTvhiiSAiUE=,tag:+U2JmxjsWRF02eFJ4P2LBw==,type:str]
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: postgres-secret
+  namespace: postgres-db
+sops:
+  kms: []
+  gcp_kms:
+    - resource_id: projects/quantum-star-435523-g9/locations/northamerica-northeast1/keyRings/my-keyring/cryptoKeys/my-key
+      created_at: "2024-11-19T16:29:42Z"
+      enc: CiQACW1Qu18BzHSI3Hxg1zIGtYqYO0D7OYQAdrpVIW2MNOS7l2QSSQDgdgXqV/c5Hw5JJB/h0FesC5uD+OU64aocKcfOqpyOlzV+sixPA1ts87etcAhgA25K7cuYps7NJtHdgDBJSKf8E+rCNWdaoQc=
+  azure_kv: []
+  hc_vault: []
+  age: []
+  lastmodified: "2024-11-19T16:29:43Z"
+  mac: ENC[AES256_GCM,data:zetItccaKW4n7PK1iYihwAQ+O+65vpIDP9FF+dZHxvRt7jbhKSme8Y5OV32u2r+vS4x53Lv1vqKVCD7za2hjOG19zVhsIeO8GsBGfdKpNeiY5RzioSpX2E+vzFQvh3NCIk1yM3r8VWaZnm7C8xzHStdPM3xZNiXGIh9c2tJ4nYw=,iv:jb7zcLASuhtVnmaAC1EsXD94s7FEF1DJISldq6xXiKI=,tag:nu+yam/JI+FRc+CpCzUppg==,type:str]
+  pgp: []
+  encrypted_regex: ^(data)$
+  version: 3.7.1
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db
+  namespace: postgres-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:13
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-db
+  namespace: postgres-db
+spec:
+  selector:
+    app: postgres-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP

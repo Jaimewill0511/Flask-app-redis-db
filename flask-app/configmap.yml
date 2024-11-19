@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flask-config
+  namespace: flask-app
+data:
+  PGDB_HOST: postgres-db.postgres-db.svc.cluster.local
+  REDIS_HOST: redis-cache.redis-cache.svc.cluster.local

@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: flask-app
+spec: {}
+status: {}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flask-config
+  namespace: flask-app
+data:
+  PGDB_HOST: postgres-db.postgres-db.svc.cluster.local
+  REDIS_HOST: redis-cache.redis-cache.svc.cluster.local
+
+---
+apiVersion: v1
+data:
+  POSTGRES_DB: ENC[AES256_GCM,data:BDzyVZFxrIk=,iv:xuvZ3WUqofvxSNVgoNqgygf+2Zm66PXzHQoA49z7G7I=,tag:TEHA3qUoskcedWyvKu83SQ==,type:str]
+  POSTGRES_PASSWORD: ENC[AES256_GCM,data:0zeL/Tsi5dQ=,iv:CgW6ikW6uP1NkLx1smm5mMuvSYdTMYl1fcuw4rPDCuY=,tag:vv9jAH31BRcCPWuxUMJd1g==,type:str]
+  POSTGRES_USER: ENC[AES256_GCM,data:PkPXM49hub6DqlKc,iv:hCgIfnKLWWHYNclCH1xFMyT2oERtUkZXYZN76+6niAE=,tag:1dIcL5Hq3AyF/Y3w5dqAvQ==,type:str]
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: flask-app-secret
+  namespace: flask-app
+sops:
+  kms: []
+  gcp_kms:
+    - resource_id: projects/quantum-star-435523-g9/locations/northamerica-northeast1/keyRings/my-keyring/cryptoKeys/my-key
+      created_at: "2024-11-19T16:28:36Z"
+      enc: CiQACW1Qu91qB+Yl1rdqnFy+oH8b8R5PyupVbR2FDXPI3CB0hUQSSQDgdgXq7Li+zz4JAIrJcJURuX5mMdWwNs9yACDauXhSstl3SvmGw+sB8XJkVvXIJuothpmvyS6STYlJ32zUMgxuKXRd0ofHMYM=
+  azure_kv: []
+  hc_vault: []
+  age: []
+  lastmodified: "2024-11-19T16:28:37Z"
+  mac: ENC[AES256_GCM,data:GGSQoXrcq90aJ1sFlyDtsRxbZra+KFLwSW/8hZIShYdmXcntsu3k5+nBodQnFu5UsyCBg7s4dJ9F7pWWPQH7zMt+V6jq7HnGdxDhZJEEz7GmQ3GGYe+zuj31O1F44/CiTJ2GdJlRnyZwfDiy8v6d8zkiZ0QrlqwEMPODwbGIkig=,iv:PUt87/W+QKCeCvhmryc2tbj1PXvTSX27EcjRHwD3TbA=,tag:UsWdEM41a/c6XGnGjbL87Q==,type:str]
+  pgp: []
+  encrypted_regex: ^(data)$
+  version: 3.7.1
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+  namespace: flask-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flask-app
+  template:
+    metadata:
+      labels:
+        app: flask-app
+    spec:
+      containers:
+        - name: flask-app
+          image: wbinitie/flaskapp:latest
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: flask-config
+            - secretRef:
+                name: flask-app-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-app
+  namespace: flask-app
+spec:
+  selector:
+    app: flask-app
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: LoadBalancer
