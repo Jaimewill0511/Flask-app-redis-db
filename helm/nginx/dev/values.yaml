@@ -1,0 +1,14 @@
+nginx:
+  name: nginx
+  namespace: nginx
+  labels:
+    app: nginx
+    env: dev
+    id: C0906287
+  image:
+    repository: wbinitie/nginx-proxy
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  containerPorts:
+    http: 80
